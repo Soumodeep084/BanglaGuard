@@ -1,0 +1,72 @@
+{
+  "model_type": "LogisticRegression",
+  "vectorizer_type": "TfidfVectorizer",
+  "vocabulary_size": 8746,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "model_params": {
+    "C": 1.0,
+    "max_iter": 1000,
+    "class_weight": "balanced",
+    "solver": "lbfgs"
+  },
+  "metrics": {
+    "test_samples": 515,
+    "ham_samples": 236,
+    "spam_samples": 279,
+    "accuracy": 0.9689320388349515,
+    "precision": 0.9747292418772563,
+    "recall": 0.967741935483871,
+    "f1_score": 0.9712230215827338,
+    "macro_precision": 0.9684570579134181,
+    "macro_recall": 0.9690404592673592,
+    "macro_f1": 0.9687338736605652,
+    "weighted_f1": 0.968941705428824,
+    "confusion_matrix": {
+      "matrix": [
+        [
+          229,
+          7
+        ],
+        [
+          9,
+          270
+        ]
+      ],
+      "tn": 229,
+      "fp": 7,
+      "fn": 9,
+      "tp": 270
+    },
+    "classification_report": {
+      "Ham (0)": {
+        "precision": 0.9621848739495799,
+        "recall": 0.9703389830508474,
+        "f1-score": 0.9662447257383966,
+        "support": 236.0
+      },
+      "Spam (1)": {
+        "precision": 0.9747292418772563,
+        "recall": 0.967741935483871,
+        "f1-score": 0.9712230215827338,
+        "support": 279.0
+      },
+      "accuracy": 0.9689320388349515,
+      "macro avg": {
+        "precision": 0.9684570579134181,
+        "recall": 0.9690404592673592,
+        "f1-score": 0.9687338736605652,
+        "support": 515.0
+      },
+      "weighted avg": {
+        "precision": 0.9689807548269035,
+        "recall": 0.9689320388349515,
+        "f1-score": 0.968941705428824,
+        "support": 515.0
+      }
+    },
+    "classification_report_text": "              precision    recall  f1-score   support\n\n     Ham (0)     0.9622    0.9703    0.9662       236\n    Spam (1)     0.9747    0.9677    0.9712       279\n\n    accuracy                         0.9689       515\n   macro avg     0.9685    0.9690    0.9687       515\nweighted avg     0.9690    0.9689    0.9689       515\n"
+  }
+}

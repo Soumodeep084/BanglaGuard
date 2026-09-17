@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BanglaGuard - Bengali SMS Spam Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-badge">
+                <span class="shield-icon">🛡️</span>
+                <h1>BanglaGuard</h1>
+            </div>
+            <p class="subtitle">Academic Bengali SMS Spam Detection System</p>
+            <div class="system-status">
+                <span class="status-indicator live"></span>
+                <span class="status-text">TF-IDF + Logistic Regression Model Online</span>
+            </div>
+        </header>
+
+        <!-- Main Card -->
+        <main class="main-card">
+            <section class="input-section">
+                <div class="section-header">
+                    <label for="sms-text" class="input-label">
+                        <span>Bengali SMS Text</span>
+                        <span class="label-bengali">(বাংলা বার্তা লিখুন)</span>
+                    </label>
+                    <button type="button" id="clear-btn" class="text-btn" title="Clear text">Clear</button>
+                </div>
+
+                <textarea id="sms-text" name="sms_text" rows="5"
+                    placeholder="এখানে বাংলা এসএমএস টেক্সট লিখুন... (যেমন: প্রিয় গ্রাহক, আপনি জিতেছেন নগদ পুরস্কার! অবিলম্বে দাবি করতে ভিজিট করুন...)"
+                    class="sms-textarea"></textarea>
+
+                <!-- Quick Test Examples -->
+                <div class="quick-examples">
+                    <span class="quick-title">Quick Samples (Click to Randomly Sample):</span>
+                    <div class="mt-1">
+                        <button type="button" class="sample-chip" data-category="promotional" title="Click to randomly choose from 10 Promotional Spam messages">
+                            📢 Promotional Spam
+                        </button>
+                        <button type="button" class="sample-chip" data-category="telecom" title="Click to randomly choose from 10 Telecom Offer messages">
+                            🎁 Telecom Offer
+                        </button>
+                        <button type="button" class="sample-chip" data-category="ham" title="Click to randomly choose from 10 Normal Ham messages">
+                            💬 Normal Ham
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Alert Box -->
+                <div id="error-box" class="error-banner hidden">
+                    <span>⚠️</span>
+                    <span id="error-message"></span>
+                </div>
+
+                <!-- Action Button -->
+                <div class="action-row">
+                    <button type="button" id="analyze-btn" class="analyze-btn">
+                        <span class="btn-text">Analyze SMS</span>
+                        <span class="btn-spinner" id="btn-spinner"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Result Section -->
+            <section id="result-container" class="result-section hidden">
+                <div class="divider"></div>
+                <div class="result-header">
+                    <h2>Analysis Result</h2>
+                    <span class="badge-tag model-badge">TF-IDF + Logistic Regression</span>
+                </div>
+
+                <div id="result-card" class="result-card">
+                    <!-- Status & Confidence Metrics -->
+                    <div class="result-main">
+                        <div class="status-group">
+                            <span class="result-label">Classification Status</span>
+                            <div id="prediction-badge" class="prediction-badge ham-badge">
+                                <span id="badge-icon">✅</span>
+                                <span id="badge-text">HAM (Legitimate)</span>
+                            </div>
+                        </div>
+
+                        <div class="confidence-group">
+                            <span class="result-label">Confidence Score</span>
+                            <div class="confidence-metric">
+                                <span id="confidence-percentage" class="confidence-val">0.0%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div id="confidence-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Probabilities Breakdown -->
+                    <div class="probs-container">
+                        <span class="result-label">Class Probabilities</span>
+                        <div class="probs-grid">
+                            <div class="prob-item">
+                                <div class="prob-header">
+                                    <span>Ham (Legitimate)</span>
+                                    <strong id="ham-prob-val">0.0%</strong>
+                                </div>
+                                <div class="prob-bar-bg">
+                                    <div id="ham-prob-bar" class="prob-bar-fill ham" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <div class="prob-item">
+                                <div class="prob-header">
+                                    <span>Spam (Suspicious)</span>
+                                    <strong id="spam-prob-val">0.0%</strong>
+                                </div>
+                                <div class="prob-bar-bg">
+                                    <div id="spam-prob-bar" class="prob-bar-fill spam" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Text Breakdown -->
+                    <div class="result-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Original Text:</span>
+                            <p id="analyzed-text-preview" class="detail-text"></p>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">NLP Preprocessed Text (Entity Masked):</span>
+                            <div id="processed-text-preview" class="detail-text processed-view"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>BanglaGuard &bull; Natural Language Processing Research for Bengali SMS Security</p>
+        </footer>
+    </div>
+
+    <script>
+        const smsText = document.getElementById('sms-text');
+        const clearBtn = document.getElementById('clear-btn');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const errorBox = document.getElementById('error-box');
+        const errorMessage = document.getElementById('error-message');
+        const resultContainer = document.getElementById('result-container');
+        const predictionBadge = document.getElementById('prediction-badge');
+        const badgeIcon = document.getElementById('badge-icon');
+        const badgeText = document.getElementById('badge-text');
+        const confidencePercentage = document.getElementById('confidence-percentage');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const hamProbVal = document.getElementById('ham-prob-val');
+        const spamProbVal = document.getElementById('spam-prob-val');
+        const hamProbBar = document.getElementById('ham-prob-bar');
+        const spamProbBar = document.getElementById('spam-prob-bar');
+        const analyzedTextPreview = document.getElementById('analyzed-text-preview');
+        const processedTextPreview = document.getElementById('processed-text-preview');
+
+        // 10 Curated Samples for each category (Total 30 Samples)
+        const SAMPLE_COLLECTIONS = {
+            promotional: [
+                "অভিনন্দন! আপনি জিতেছেন নগদ ৳৫০,০০০ টাকা! পুরস্কার পেতে কল করুন ০১৭১২৩৪৫৬৭৮",
+                "লটারিতে প্রথম পুরস্কার বিজয়ী আপনি! নগদ ১ লাখ টাকা বুঝে নিতে ভিজিট করুন https://prize-bd.com/claim এখনই।",
+                "দারুণ সুযোগ! ঘরে বসে আয় করুন দৈনিক ১০০০-২০০০ টাকা। বিস্তারিত জানতে হোয়াটসঅ্যাপ করুন +৮৮০১৮১২৩৪৫৬৭৮ নম্বরে।",
+                "বিশেষ ধামাকা অফার! সকল পণ্যে ৭০% পর্যন্ত ছাড় পেতে আজই অর্ডার করুন www.megastore.com.bd থেকে।",
+                "প্রিয় গ্রাহক, বিকাশ একাউন্টে ক্যাশব্যাক অফার চালু হয়েছে। ২০০০ টাকা রিচার্জে ৫০০ টাকা বোনাস পেতে ডায়াল করুন ১৬২৪৭।",
+                "আপনার ক্রেডিট কার্ডের জন্য ৫ লক্ষ টাকা পর্যন্ত প্রি-অ্যাপ্রুভড লোন প্রস্তুত! এখনই আবেদন করতে কল করুন ০৯৬১২৩৪৫৬৭৮।",
+                "সুসংবাদ! বিনামূল্যে আইফোন ১৫ প্রো ম্যাক্স জেতার সুযোগ! এখনই অংশগ্রহণ করতে ক্লিক করুন http://free-gift.xyz",
+                "জরুরি বার্তা: আপনার রিওয়ার্ড পয়েন্ট মেয়াদোত্তীর্ণ হচ্ছে! ১০,০০০ টাকা সমমূল্যের পয়েন্ট ভাঙাতে যোগাযোগ করুন info@giftclaim.com এ।",
+                "আন্তর্জাতিক ভিসা ও স্কলারশিপ নিশ্চিত! কোনো ব্যাংক স্পনসর ছাড়াই সরাসরি প্রসেসিং। কল: ০১৯৯৮৭৬৫৪৩২।",
+                "আজকের স্পেশাল লাকি ড্র বিজয়ী নম্বর আপনার সিম! গাড়ি জেতার সুযোগ মিস না করতে ডায়াল করুন *৯৯৯*৫#"
+            ],
+            telecom: [
+                "মাত্র ১০ টাকায় ১ জিবি ইন্টারনেট মেয়াদ ৩ দিন! অফারটি নিতে ডায়াল করুন *১২১*১# এখনই।",
+                "রিচার্জ বোনাস! ২৯৯ টাকা রিচার্জে পান ৩০ জিবি ইন্টারনেট + ৫০০ মিনিট ৩০ দিন মেয়াদ। ডায়াল *১২১*২৯৯#",
+                "প্রিয় গ্রাহক, আপনার জন্য স্পেশাল অফার! ৫০ টাকায় ২ জিবি + ৫০ মিনিট মেয়াদ ৭ দিন। ডায়াল *৫০০০*৫০#",
+                "অবিশ্বাস্য অফার! মাত্র ১৯ টাকায় ৫০ মিনিট যেকোনো লোকাল নম্বরে মেয়াদ ২ দিন। ডায়াল করুন *১২১*৫#",
+                "রাত ১২টা থেকে সকাল ১০টা পর্যন্ত আনলিমিটেড ফেসবুক ও ইউটিউব মাত্র ৫ টাকায়! ডায়াল *১২১*৭৭#",
+                "মাইপ্ল্যান অফার: ৪৫ টাকায় ৩ জিবি ইন্টারনেট মেয়াদ ৫ দিন। অফারটি শুধুমাত্র আপনার জন্য প্রযোজ্য, ডায়াল *৪# এখনই।",
+                "সিম রি-অ্যাক্টিভেশন ধামাকা! বন্ধ সংযোগ চালু করলেই ৫ জিবি ফ্রি + ১ পয়সা/সেকেন্ড কলরেট। ডায়াল *১২১*১০০#",
+                "জরুরি ব্যালেন্স দরকার? ডায়াল করুন *১২১*৮# এবং পেয়ে যান ১০০ টাকা পর্যন্ত ইমার্জেন্সি লোন।",
+                "মাত্র ৯৯ টাকায় ১০ জিবি ও ২০০ মিনিট মেয়াদ ১৫ দিন! এখনই অফারটি সক্রিয় করতে রিচার্জ করুন ৯৯ টাকা।",
+                "স্পেশাল ফ্রাইডে প্যাক! আজই ডায়াল করুন *১২১*০৭# এবং পেয়ে যান দ্বিগুণ মেগাবাইট একদম ফ্রি!"
+            ],
+            ham: [
+                "শুভ সকাল মা, আমি বাসায় পৌঁছে গেছি। চিন্তা করো না, ভালো আছি।",
+                "দোস্ত, তুই কি কালকে ক্যাম্পাসে আসবি? আমরা লাইব্রেরিতে বসে প্রজেক্টের কাজ শেষ করব।",
+                "আজকে অফিসের মিটিং বিকেল ৪টায় পিছিয়ে দেওয়া হয়েছে। সবাই কনফারেন্স রুমে উপস্থিত থাকবেন।",
+                "ভাইয়া, ফেরার সময় বাজার থেকে এক কেজি মিষ্টি আর ফল নিয়ে এসো।",
+                "তোমার জন্মদিনের অনেক অনেক শুভকামনা! আগামী দিনগুলো আনন্দে কাটুক।",
+                "স্যার, ট্রাফিকের কারণে আমার আসতে ১০ মিনিট দেরি হবে। অনুগ্রহ করে একটু বিবেচনা করবেন।",
+                "আজ রাতের খাবারের মেন্যু কি? আমি আর বাবা সাড়ে আটটার মধ্যে বাড়ি ফিরব।",
+                "আমাদের পরীক্ষার রুটিন প্রকাশিত হয়েছে। ওয়েবসাইট থেকে ডাউনলোড করে দেখে নিও।",
+                "ডাক্তারের অ্যাপয়েন্টমেন্ট আগামীকাল সকাল ১০টায়। সব রিপোর্ট সাথে নিয়ে যেও।",
+                "ধন্যবাদ ভাইয়া, টাকাটা সঠিক সময়ে পেয়ে গেছি। কাজ শেষে তোমাকে কল দিচ্ছি।"
+            ]
+        };
+
+        const lastIndices = { promotional: -1, telecom: -1, ham: -1 };
+
+        function hideError() {
+            errorBox.classList.add('hidden');
+            errorMessage.textContent = '';
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorBox.classList.remove('hidden');
+        }
+
+        // Click handler for sample buttons
+        document.querySelectorAll('.sample-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                hideError();
+                const category = chip.getAttribute('data-category');
+                const list = SAMPLE_COLLECTIONS[category];
+
+                if (list && list.length > 0) {
+                    let nextIndex;
+                    do {
+                        nextIndex = Math.floor(Math.random() * list.length);
+                    } while (list.length > 1 && nextIndex === lastIndices[category]);
+
+                    lastIndices[category] = nextIndex;
+                    smsText.value = list[nextIndex];
+                    smsText.focus();
+
+                    chip.style.transform = 'scale(0.95)';
+                    setTimeout(() => { chip.style.transform = ''; }, 120);
+                }
+            });
+        });
+
+        // Clear textarea
+        clearBtn.addEventListener('click', () => {
+            smsText.value = '';
+            hideError();
+            resultContainer.classList.add('hidden');
+            smsText.focus();
+        });
+
+        // Helper to format entity tokens nicely in processed text view
+        function renderProcessedText(processedStr) {
+            if (!processedStr) return '<em>(Empty)</em>';
+            const escaped = processedStr
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            
+            return escaped.replace(/&lt;(URL|PHONE|EMAIL|MONEY|NUMBER)&gt;/g, '<span class="entity-token">&lt;$1&gt;</span>');
+        }
+
+        // Analyze SMS button
+        analyzeBtn.addEventListener('click', async () => {
+            hideError();
+            const text = smsText.value.trim();
+            if (!text) {
+                showError('অনুগ্রহ করে একটি এসএমএস টেক্সট লিখুন (Please enter an SMS text to analyze).');
+                smsText.focus();
+                return;
+            }
+
+            // Show loading state
+            analyzeBtn.disabled = true;
+            btnSpinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errDetail = data.detail || `Server returned HTTP ${response.status}`;
+                    showError(typeof errDetail === 'string' ? errDetail : JSON.stringify(errDetail));
+                    resultContainer.classList.add('hidden');
+                    return;
+                }
+
+                displayResult(data);
+            } catch (err) {
+                console.error('Prediction request error:', err);
+                showError(`সার্ভারের সাথে যোগাযোগ করতে সমস্যা হয়েছে: ${err.message || err}`);
+                resultContainer.classList.add('hidden');
+            } finally {
+                analyzeBtn.disabled = false;
+                btnSpinner.style.display = 'none';
+            }
+        });
+
+        function displayResult(data) {
+            resultContainer.classList.remove('hidden');
+            analyzedTextPreview.textContent = data.original_text || smsText.value;
+            processedTextPreview.innerHTML = renderProcessedText(data.processed_text);
+
+            const isSpam = data.label === 'spam' || data.prediction === 'spam';
+            const confidenceVal = (data.confidence !== undefined) ? (data.confidence * 100).toFixed(2) : '0.00';
+            const spamProb = (data.spam_probability !== undefined) ? (data.spam_probability * 100).toFixed(2) : '0.00';
+            const hamProb = (data.ham_probability !== undefined) ? (data.ham_probability * 100).toFixed(2) : '0.00';
+
+            if (isSpam) {
+                predictionBadge.className = 'prediction-badge spam-badge';
+                badgeIcon.textContent = '🚨';
+                badgeText.textContent = 'SPAM (সন্দেহজনক স্প্যাম বার্তা)';
+                confidenceBar.style.backgroundColor = 'var(--danger-color)';
+            } else {
+                predictionBadge.className = 'prediction-badge ham-badge';
+                badgeIcon.textContent = '✅';
+                badgeText.textContent = 'HAM (স্বাভাবিক বার্তা)';
+                confidenceBar.style.backgroundColor = 'var(--success-color)';
+            }
+
+            confidencePercentage.textContent = `${confidenceVal}%`;
+            confidenceBar.style.width = `${confidenceVal}%`;
+
+            hamProbVal.textContent = `${hamProb}%`;
+            hamProbBar.style.width = `${hamProb}%`;
+
+            spamProbVal.textContent = `${spamProb}%`;
+            spamProbBar.style.width = `${spamProb}%`;
+
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+
+</html>
