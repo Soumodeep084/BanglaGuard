@@ -188,3 +188,14 @@ def test_sms(payload: SMSRequest):
         "message": "SMS received successfully by BanglaGuard API",
         "received_text": payload.text,
     }
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "8000"))
+    print(f"[INFO] Starting BanglaGuard server on {host}:{port}")
+    uvicorn.run("app.main:app", host=host, port=port, reload=False)
+

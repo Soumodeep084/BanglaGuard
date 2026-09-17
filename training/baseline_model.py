@@ -34,15 +34,20 @@ from training.preprocessor import BengaliTextPreprocessor, preprocess_bengali_te
 
 
 # Default paths for processed dataset and model directory
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+
 DEFAULT_PROCESSED_PATHS = [
+    PACKAGE_ROOT / "data" / "processed" / "processed_dataset.csv",
+    PACKAGE_ROOT / "data" / "processed_dataset.csv",
     Path("data/processed/processed_dataset.csv"),
     Path("data/processed_dataset.csv"),
 ]
 
-DEFAULT_MODEL_DIR = Path("models")
+DEFAULT_MODEL_DIR = PACKAGE_ROOT / "models" if (PACKAGE_ROOT / "models").exists() else Path("models")
 DEFAULT_VECTORIZER_FILENAME = "tfidf_vectorizer.joblib"
 DEFAULT_MODEL_FILENAME = "logistic_regression.joblib"
 DEFAULT_METADATA_FILENAME = "baseline_metadata.json"
+
 
 
 def locate_processed_dataset(dataset_path: Optional[Union[str, Path]] = None) -> Path:
