@@ -96,6 +96,64 @@ class TestBanglaGuardAPI(unittest.TestCase):
         self.assertEqual(data.get("status"), "success")
         self.assertEqual(data.get("received_text"), "টেস্ট মেসেজ")
 
+    def test_post_nlp_analyze_endpoint(self):
+        sample_text = "অভিনন্দন! আপনি জিতেছেন নগদ ৳৫০,০০০ টাকা! পুরস্কার পেতে কল করুন ০১৭১২৩৪৫৬৭৮"
+        response = self.client.post("/nlp/analyze", json={"text": sample_text})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(data.get("original_text"), sample_text)
+        self.assertIn("<MONEY>", data.get("preprocessed_text"))
+        self.assertIn("<PHONE>", data.get("preprocessed_text"))
+        self.assertIsInstance(data.get("tokens"), list)
+        self.assertIsInstance(data.get("unigrams"), list)
+        self.assertIsInstance(data.get("bigrams"), list)
+        self.assertIsInstance(data.get("trigrams"), list)
+        self.assertGreater(len(data.get("unigrams")), 0)
+        self.assertGreater(len(data.get("bigrams")), 0)
+        self.assertGreater(len(data.get("trigrams")), 0)
+        self.assertIn("<MONEY>", data.get("detected_entities"))
+        self.assertIn("<PHONE>", data.get("detected_entities"))
+
+        # Character N-Grams
+        char_ngrams = data.get("character_ngrams", {})
+        self.assertIn("3_grams", char_ngrams)
+        self.assertIn("4_grams", char_ngrams)
+        self.assertIn("5_grams", char_ngrams)
+        self.assertGreater(len(char_ngrams["3_grams"]), 0)
+
+        # Benchmarks
+        benchmarks = data.get("benchmarks", [])
+        self.assertEqual(len(benchmarks), 3)
+        self.assertTrue(benchmarks[0]["is_production"])
+
+    def test_post_nlp_analyze_empty_validation(self):
+        response = self.client.post("/nlp/analyze", json={"text": "   "})
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_nlp_edit_distance_endpoint(self):
+        response = self.client.post(
+            "/nlp/edit-distance",
+            json={"string_1": "লটারি", "string_2": "লটারী"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(data.get("string_1"), "লটারি")
+        self.assertEqual(data.get("string_2"), "লটারী")
+        self.assertEqual(data.get("levenshtein_distance"), 1)
+        self.assertEqual(data.get("similarity_score"), 0.8)
+
+    def test_get_nlp_benchmarks_endpoint(self):
+        response = self.client.get("/nlp/benchmarks")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(len(data.get("benchmarks", [])), 3)
+        self.assertTrue(any(b["is_production"] for b in data["benchmarks"]))
+
 
 if __name__ == "__main__":
     unittest.main()
+

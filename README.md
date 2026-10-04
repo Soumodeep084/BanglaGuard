@@ -32,13 +32,19 @@ BanglaGuard/
 │   ├── __init__.py
 │   ├── preprocessor.py      # BengaliTextPreprocessor class
 │   ├── data_prep.py         # Dataset cleaning & preparation
-│   ├── baseline_model.py    # Training & evaluation pipeline
+│   ├── baseline_model.py    # Baseline training & inference pipeline
+│   ├── nlp_experiments.py   # Trigram, Character N-gram, & Edit distance experiments
+│   ├── error_analysis.py    # Diagnostic false-positive analysis
 │   └── train_baseline.py    # Model training CLI script
 ├── tests/
-│   ├── test_api.py          # API & route test suite
+│   ├── test_api.py          # API & NLP endpoints test suite
 │   ├── test_baseline_model.py # Model & inference tests
+│   ├── test_experiments.py  # NLP experiments & edit distance tests
 │   ├── test_preprocessor.py # Preprocessing & normalization tests
 │   └── test_data_prep.py    # Data preparation tests
+├── docs/
+│   ├── NLP_EXPERIMENTS_REPORT.md # Experimental benchmarking report
+│   └── NLP_CONCEPTS_GUIDE.md     # NLP theory, architecture & viva guide
 ├── data/
 │   └── processed/           # Processed datasets
 ├── Procfile                 # Cloud deployment process file
@@ -86,12 +92,6 @@ The platform will dynamically assign the `PORT` environment variable:
 uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-Alternatively, standard ASGI execution:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
 ### Runtime Model Artifacts
 
 > **Important**: The trained model artifacts inside the `models/` directory (`tfidf_vectorizer.joblib`, `logistic_regression.joblib`, and `baseline_metadata.json`) are required at runtime. Ensure these files are committed and present in the deployment repository.
@@ -137,11 +137,20 @@ Classifies a Bengali SMS message:
 }
 ```
 
+### `POST /nlp/analyze`
+Deconstructs an SMS text into its linguistic features (tokens, unigrams, bigrams, trigrams, detected entities, and character n-grams).
+
+### `POST /nlp/edit-distance`
+Calculates dynamic programming Levenshtein edit distance and normalized similarity between two strings.
+
+### `GET /nlp/benchmarks`
+Returns empirical comparison benchmarks across Baseline (1,2), Trigram (1,3), and Character (3,5) models.
+
 ---
 
 ## Running Tests
 
-Execute the full test suite (31 unit tests):
+Execute the complete test suite (46 unit and integration tests):
 
 ```bash
 uv run python -m unittest discover -s tests -p "test_*.py"

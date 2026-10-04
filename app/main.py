@@ -33,6 +33,12 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from training.baseline_model import BaselinePredictor
+from training.nlp_experiments import (
+    STATIC_MODEL_BENCHMARKS,
+    extract_nlp_features,
+    levenshtein_distance,
+    levenshtein_similarity,
+)
 
 
 # Resolve project directories
@@ -89,6 +95,25 @@ class SMSResponse(BaseModel):
     original_text: str
     processed_text: str
     model_name: str
+
+
+class NLPAnalysisRequest(BaseModel):
+    text: str = Field(..., description="Bengali SMS text to deconstruct and analyze")
+    compare_word_1: Optional[str] = Field(None, description="Optional primary word for edit distance")
+    compare_word_2: Optional[str] = Field(None, description="Optional comparison word for edit distance")
+
+
+class EditDistanceRequest(BaseModel):
+    string_1: str = Field(..., description="Source string for Levenshtein edit distance")
+    string_2: str = Field(..., description="Target comparison string")
+
+
+class EditDistanceResponse(BaseModel):
+    status: str
+    string_1: str
+    string_2: str
+    levenshtein_distance: int
+    similarity_score: float
 
 
 def get_predictor(app_instance: FastAPI) -> BaselinePredictor:
@@ -178,6 +203,84 @@ def predict_sms_endpoint(payload: SMSRequest):
 def analyze_sms_alias(payload: SMSRequest):
     """Alias for /predict endpoint for backward compatibility."""
     return predict_sms_endpoint(payload)
+
+
+@app.post("/nlp/analyze")
+def analyze_nlp_endpoint(payload: NLPAnalysisRequest):
+    """
+    Deconstruct an SMS message into NLP features:
+    - Normalization & Entity Replacement
+    - Extracted Word Tokens
+    - Word Unigrams, Bigrams, Trigrams
+    - Subword Character N-Grams
+    - Optional Levenshtein Edit Distance Calculation
+    - Academic Model Comparison Benchmarks
+    """
+    raw_text = payload.text.strip() if payload.text else ""
+    if not raw_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="অনুগ্রহ করে একটি বাংলা এসএমএস লিখুন (Please enter an SMS text for NLP analysis).",
+        )
+
+    try:
+        features = extract_nlp_features(raw_text)
+
+        # Optional edit distance comparison
+        edit_dist_result = None
+        if payload.compare_word_1 and payload.compare_word_2:
+            s1 = payload.compare_word_1.strip()
+            s2 = payload.compare_word_2.strip()
+            dist = levenshtein_distance(s1, s2)
+            sim = levenshtein_similarity(s1, s2)
+            edit_dist_result = {
+                "string_1": s1,
+                "string_2": s2,
+                "levenshtein_distance": dist,
+                "similarity_score": sim,
+            }
+
+        return {
+            "status": "success",
+            **features,
+            "edit_distance_demo": edit_dist_result,
+            "benchmarks": STATIC_MODEL_BENCHMARKS,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"NLP Feature Extraction error: {str(e)}",
+        )
+
+
+@app.post("/nlp/edit-distance", response_model=EditDistanceResponse)
+def calculate_edit_distance_endpoint(payload: EditDistanceRequest):
+    """
+    Calculate pure-Python Levenshtein edit distance and similarity
+    between two Bengali or English words/phrases.
+    """
+    s1 = payload.string_1.strip() if payload.string_1 is not None else ""
+    s2 = payload.string_2.strip() if payload.string_2 is not None else ""
+
+    dist = levenshtein_distance(s1, s2)
+    sim = levenshtein_similarity(s1, s2)
+
+    return EditDistanceResponse(
+        status="success",
+        string_1=s1,
+        string_2=s2,
+        levenshtein_distance=dist,
+        similarity_score=sim,
+    )
+
+
+@app.get("/nlp/benchmarks")
+def get_benchmarks_endpoint():
+    """Retrieve precomputed NLP model comparison benchmark metrics."""
+    return {
+        "status": "success",
+        "benchmarks": STATIC_MODEL_BENCHMARKS,
+    }
 
 
 @app.post("/test-sms")
